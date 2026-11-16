@@ -3,12 +3,14 @@
    ========================================================================== */
 
 :root {
-  --bg: #F5F1E8;
-  --surface: #EDE8DC;
-  --text: #1F1E1D;
-  --muted: #6B6760;
-  --line: #D9D3C5;
-  --accent: #C96442;
+  --bg: #F3F0E8;
+  --surface: #E9E4D8;
+  --text: #0E1322;
+  --muted: #5A6072;
+  --line: #D8D2C2;
+  --secondary: #7E5F17;
+  --accent: #2A45F5;
+  --on-accent: #FFFFFF;
 
   /* Theme icon state: 1 = shown, 0 = hidden */
   --sun: 0;
@@ -27,12 +29,14 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #1A1918;
-    --surface: #242321;
-    --text: #ECE8DF;
-    --muted: #9C978D;
-    --line: #33312D;
-    --accent: #D97757;
+    --bg: #090D18;
+    --surface: #121829;
+    --text: #ECE7DB;
+    --muted: #9499A8;
+    --line: #232A3D;
+    --secondary: #D2B170;
+    --accent: #5B7BFF;
+    --on-accent: #070B14;
     --sun: 1;
     --moon: 0;
     color-scheme: dark;
@@ -40,12 +44,14 @@
 }
 
 :root[data-theme="dark"] {
-  --bg: #1A1918;
-  --surface: #242321;
-  --text: #ECE8DF;
-  --muted: #9C978D;
-  --line: #33312D;
-  --accent: #D97757;
+  --bg: #090D18;
+  --surface: #121829;
+  --text: #ECE7DB;
+  --muted: #9499A8;
+  --line: #232A3D;
+  --secondary: #D2B170;
+  --accent: #5B7BFF;
+  --on-accent: #070B14;
   --sun: 1;
   --moon: 0;
   color-scheme: dark;
@@ -122,7 +128,7 @@ svg {
 
 ::selection {
   background: var(--accent);
-  color: var(--bg);
+  color: var(--on-accent);
 }
 
 :focus-visible {
@@ -447,7 +453,7 @@ main:focus {
 .btn-primary {
   background-color: var(--accent);
   border-color: var(--accent);
-  color: var(--bg);
+  color: var(--on-accent);
 }
 
 .btn-outline {
@@ -1059,6 +1065,229 @@ html.has-cursor * {
 }
 
 /* ==========================================================================
+   Personal layer: forecast chart, topic strip, section numbers, spotlight
+   ========================================================================== */
+
+/* Hero forecast fan. The two wrappers slide in opposite directions, so the
+   chart stays still while it is wiped in from the left (transform only). */
+.hero-chart {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 36%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+@media (min-width: 768px) {
+  .hero-chart {
+    height: 60%;
+  }
+}
+
+.hero-chart-inner,
+.hero-chart svg {
+  width: 100%;
+  height: 100%;
+}
+
+.hero-chart svg {
+  opacity: 0.7;
+  -webkit-mask-image: linear-gradient(to top, #000 25%, transparent 95%);
+  mask-image: linear-gradient(to top, #000 25%, transparent 95%);
+}
+
+.js .hero-chart,
+.js .hero-chart-inner {
+  transition: transform 2600ms cubic-bezier(0.65, 0, 0.35, 1) var(--base, 0ms);
+}
+
+.js .hero-chart {
+  transform: translateX(-100%);
+}
+
+.js .hero-chart-inner {
+  transform: translateX(100%);
+}
+
+.hero.hero-in .hero-chart,
+.hero.hero-in .hero-chart-inner {
+  transform: none;
+}
+
+.hero-chart polyline,
+.hero-chart line {
+  fill: none;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.chart-history {
+  stroke: var(--secondary);
+}
+
+.chart-now {
+  stroke: var(--line);
+  stroke-dasharray: 4 6;
+}
+
+.chart-fan {
+  transition: opacity 600ms ease;
+}
+
+.chart-fan.is-swapping {
+  opacity: 0;
+}
+
+.chart-fan polyline {
+  stroke: var(--accent);
+  opacity: 0.2;
+}
+
+.chart-fan .chart-mean {
+  stroke-width: 2.5;
+  opacity: 1;
+}
+
+/* Live dot on the eyebrow */
+.eyebrow {
+  position: relative;
+  padding-left: 20px;
+  color: var(--secondary);
+}
+
+.eyebrow::before,
+.eyebrow::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--accent);
+}
+
+.eyebrow::after {
+  animation: ping 2.4s var(--ease) infinite;
+}
+
+@keyframes ping {
+  0% { opacity: 0.7; transform: scale(1); }
+  70%, 100% { opacity: 0; transform: scale(3.2); }
+}
+
+/* Topic strip */
+.marquee {
+  overflow: hidden;
+  padding: 28px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.marquee + .section > .container {
+  border-top: 0;
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 48s linear infinite;
+}
+
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+.marquee-track span {
+  flex-shrink: 0;
+  font-family: var(--serif);
+  font-optical-sizing: auto;
+  font-size: clamp(1.5rem, 3.6vw, 2.5rem);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.marquee-track i {
+  margin: 0 0.6em;
+  color: var(--accent);
+  font-style: normal;
+}
+
+@keyframes marquee {
+  to { transform: translateX(-50%); }
+}
+
+/* Section numbers */
+main {
+  counter-reset: section;
+}
+
+.section-title::before {
+  counter-increment: section;
+  content: "0" counter(section);
+  content: "0" counter(section) / "";
+  display: block;
+  margin-bottom: 14px;
+  color: var(--secondary);
+  font-family: var(--sans);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Card spotlight that follows the cursor */
+.card {
+  position: relative;
+  overflow: hidden;
+}
+
+.card > * {
+  position: relative;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 420px;
+  height: 420px;
+  margin: -210px 0 0 -210px;
+  border-radius: 50%;
+  background-image: radial-gradient(circle closest-side, var(--accent), transparent);
+  opacity: 0;
+  transform: translate3d(var(--mx, 50%), var(--my, 50%), 0);
+  transition: opacity 500ms ease;
+  pointer-events: none;
+}
+
+@media (hover: hover) {
+  .card:hover::before {
+    opacity: 0.16;
+  }
+
+  .btn-outline:hover,
+  .menu-btn:hover {
+    border-color: var(--accent);
+  }
+}
+
+.card .card-meta,
+.entry-date {
+  color: var(--secondary);
+}
+
+.portrait {
+  outline: 1px solid var(--secondary);
+  outline-offset: 10px;
+  margin-left: 10px;
+}
+
+/* ==========================================================================
    Reduced motion: no movement, opacity fades only
    ========================================================================== */
 
@@ -1085,6 +1314,17 @@ html.has-cursor * {
   .section-title::after {
     transform: scaleX(1);
     transition: background-color 300ms ease;
+  }
+
+  .js .hero-chart,
+  .js .hero-chart-inner {
+    transform: none;
+    transition: none;
+  }
+
+  .eyebrow::after,
+  .marquee-track {
+    animation: none;
   }
 
   .scroll-indicator::after {

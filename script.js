@@ -13,7 +13,7 @@
      Theme toggle
      ------------------------------------------------------------------------ */
 
-  const THEME_COLORS = { light: '#F5F1E8', dark: '#1A1918' };
+  const THEME_COLORS = { light: '#F3F0E8', dark: '#090D18' };
   const darkQuery = media('(prefers-color-scheme: dark)');
   const themeToggle = document.querySelector('.theme-toggle');
   const themeMetas = document.querySelectorAll('meta[name="theme-color"]');
@@ -79,6 +79,37 @@
   hero.style.setProperty('--base', `${reduceMotion ? 0 : letterCount * 30 + 350}ms`);
 
   const playHero = () => hero.classList.add('hero-in');
+
+  /* ------------------------------------------------------------------------
+     Hero chart: a random-walk history with simulated forecast paths ahead
+     ------------------------------------------------------------------------ */
+
+  const NOW_X = 560;
+  const noise = () => (Math.random() + Math.random() + Math.random() - 1.5) * 2;
+  const walk = (y0, steps, drift, spread) => {
+    const ys = [y0];
+    for (let i = 1; i <= steps; i++) ys.push(clamp(ys[i - 1] + drift + noise() * spread, 12, 388));
+    return ys;
+  };
+  const toPoints = (ys, x0, x1) =>
+    ys.map((y, i) => `${(x0 + ((x1 - x0) * i) / (ys.length - 1)).toFixed(1)},${y.toFixed(1)}`).join(' ');
+
+  const history = walk(320, 70, -1.3, 8);
+  const lastY = history[history.length - 1];
+
+  function forecastMarkup() {
+    const paths = Array.from({ length: 24 }, () => walk(lastY, 36, -1.6, 7));
+    const mean = paths[0].map((_, i) => paths.reduce((sum, p) => sum + p[i], 0) / paths.length);
+    return paths.concat([mean]).map((ys, i) =>
+      `<polyline${i === paths.length ? ' class="chart-mean"' : ''} points="${toPoints(ys, NOW_X, 1000)}"/>`).join('');
+  }
+
+  const chart = document.querySelector('.hero-chart svg');
+  chart.innerHTML =
+    `<line class="chart-now" x1="${NOW_X}" y1="0" x2="${NOW_X}" y2="400"/>` +
+    `<polyline class="chart-history" points="${toPoints(history, 0, NOW_X)}"/>` +
+    `<g class="chart-fan">${forecastMarkup()}</g>`;
+  const chartFan = chart.querySelector('.chart-fan');
 
   /* ------------------------------------------------------------------------
      Intro overlay (once per session)
@@ -350,6 +381,8 @@
         const px = (event.clientX - rect.left) / rect.width - 0.5;
         const py = (event.clientY - rect.top) / rect.height - 0.5;
         card.classList.add('is-tilting');
+        card.style.setProperty('--mx', `${(event.clientX - rect.left).toFixed(0)}px`);
+        card.style.setProperty('--my', `${(event.clientY - rect.top).toFixed(0)}px`);
         card.style.setProperty('--ry', `${(px * 2 * MAX_TILT).toFixed(2)}deg`);
         card.style.setProperty('--rx', `${(-py * 2 * MAX_TILT).toFixed(2)}deg`);
       });
@@ -360,6 +393,16 @@
       });
     });
   }
+
+  // Re-run the forecast simulation every few seconds while the hero is on screen.
+  setInterval(() => {
+    if (!heroVisible || document.hidden) return;
+    chartFan.classList.add('is-swapping');
+    setTimeout(() => {
+      chartFan.innerHTML = forecastMarkup();
+      chartFan.classList.remove('is-swapping');
+    }, 600);
+  }, 6000);
 
   function frame(now) {
     if (heroVisible) {
